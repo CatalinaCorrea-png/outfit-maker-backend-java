@@ -1,0 +1,40 @@
+server:
+  port: 8080
+
+jwt:
+  # HS256 necesita minimo 256 bits (32 chars). En la nube se pisa con la env var JWT_KEY.
+  key: ${JWT_KEY}
+  # milisegundos
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION:900000}      # 15 minutos
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 dias
+
+spring:
+  #   base de datos posta
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/outfitmaker_sql}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 5000
+      initialization-fail-timeout: 1
+
+  jpa:
+    open-in-view: false
+    show-sql: true
+    hibernate:
+      # Local: create-drop (esquema limpio en cada corrida). En la nube conviene `update`
+      # para no dropear/recrear en cada cold start (el bootstrap es idempotente y reseed-ea).
+      ddl-auto: ${JPA_DDL_AUTO:create-drop}
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+# Para activar el Trace
+logging:
+  level:
+    root: INFO
+    com.zaxxer.hikari: DEBUG
+    org.postgresql: DEBUG
+    org.springframework.data: DEBUG
