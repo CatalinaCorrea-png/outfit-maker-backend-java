@@ -53,7 +53,7 @@ public class SecurityConfiguration {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         // Endpoints publicos
-                        .requestMatchers("/auth", "/auth/refresh", "/error").permitAll()
+                        .requestMatchers("/auth", "/auth/refresh", "/auth/register", "/error").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         // react pregunta antes de hacer la request real
                         .requestMatchers(HttpMethod.OPTIONS).permitAll()
