@@ -1,5 +1,6 @@
 package ar.outfitmaker.domain;
 
+import ar.outfitmaker.errors.BusinessException;
 import ar.outfitmaker.repository.RepositoryElement;
 import jakarta.persistence.*;
 
@@ -106,7 +107,7 @@ public class Garment implements RepositoryElement {
 
     @Override
     public void validate() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (this.formality < 1 || this.formality > 5) throw new BusinessException("INVALID_FORMALITY_NUMBER", "La formalidad debe estar entre 1 y 5");
     }
 
     public User getUser() {

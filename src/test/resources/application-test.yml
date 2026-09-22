@@ -1,0 +1,26 @@
+jwt:
+  # Clave solo para tests. No es un secreto: nunca firma nada real.
+  key: clave-de-test-con-al-menos-32-caracteres-ok
+  access-token-expiration: 900000
+  refresh-token-expiration: 604800000
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:outfitmaker;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+logging:
+  level:
+    root: WARN
+    com.zaxxer.hikari: WARN
+    org.postgresql: WARN
+    org.springframework.data: WARN
