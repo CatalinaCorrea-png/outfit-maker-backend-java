@@ -10,7 +10,7 @@ class OutfitTest {
     private final User cher = new User("cher@gmail.com", "Cher", "", "hash");
 
     @Test
-    void addTag_addingSameTagThrowsException() {
+    void addTag_rejectsDuplicateTag() {
         Outfit outfit = new Outfit(cher);
         Tag casual = new Tag("casual", TagType.STYLE);
         outfit.addTag(casual);
@@ -21,7 +21,7 @@ class OutfitTest {
     }
 
     @Test
-    void aiGenerated_setAiGeneratedTrueAndSavesPrompt() {
+    void aiGenerated_marksOutfitAsAiAndStoresPrompt() {
         Outfit outfit = Outfit.aiGenerated(cher, "outfit for a casual dinner");
 
         assertThat(outfit.isAiGenerated()).isTrue();

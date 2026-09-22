@@ -23,34 +23,34 @@ class TokenServiceTest {
     @BeforeEach
     void setup() {
         tokenService = new TokenService(new JwtProperties(KEY, 900_000, 604_800_000));
-        cher = User.withUsername("cher@gmail.com").password("irrelevante").build();
+        cher = User.withUsername("cher@gmail.com").password("irrelevant").build();
     }
 
     @Test
-    void extractEmail_returnsTokensSubject() {
-        String token = tokenService.generate(cher, enUnaHora());
+    void extractEmail_returnsTokenSubject() {
+        String token = tokenService.generate(cher, inOneHour());
 
         assertThat(tokenService.extractEmail(token)).isEqualTo("cher@gmail.com");
     }
 
     @Test
     void isValid_isTrueForTokenOwner() {
-        String token = tokenService.generate(cher, enUnaHora());
+        String token = tokenService.generate(cher, inOneHour());
 
         assertThat(tokenService.isValid(token, cher)).isTrue();
     }
 
     @Test
     void isValid_isFalseForOtherUser() {
-        String token = tokenService.generate(cher, enUnaHora());
-        UserDetails otherUser = User.withUsername("other@gmail.com").password("irrelevante").build();
+        String token = tokenService.generate(cher, inOneHour());
+        UserDetails otherUser = User.withUsername("other@gmail.com").password("irrelevant").build();
 
         assertThat(tokenService.isValid(token, otherUser)).isFalse();
     }
 
     @Test
-    void expiredToken_throwsExceptionWhenParsed() {
-        String token = tokenService.generate(cher, haceUnMinuto());
+    void isExpired_throwsForExpiredToken() {
+        String token = tokenService.generate(cher, oneMinuteAgo());
 
         // JJWT no devuelve los claims de un token vencido: tira excepción.
         // Por eso AuthService.refreshAccessToken envuelve isExpired en un try/catch.
@@ -59,21 +59,21 @@ class TokenServiceTest {
     }
 
     @Test
-    void tokenSignedWithOtherKey_throwsException() {
-        TokenService otroServidor = new TokenService(
+    void extractEmail_rejectsTokenSignedWithOtherKey() {
+        TokenService otherServer = new TokenService(
                 new JwtProperties("otra-clave-distinta-tambien-de-32-caracteres", 900_000, 604_800_000)
         );
-        String tokenAjeno = otroServidor.generate(cher, enUnaHora());
+        String foreignToken = otherServer.generate(cher, inOneHour());
 
-        assertThatThrownBy(() -> tokenService.extractEmail(tokenAjeno))
+        assertThatThrownBy(() -> tokenService.extractEmail(foreignToken))
                 .isInstanceOf(JwtException.class);
     }
 
-    private static Date enUnaHora() {
+    private static Date inOneHour() {
         return new Date(System.currentTimeMillis() + 3_600_000);
     }
 
-    private static Date haceUnMinuto() {
+    private static Date oneMinuteAgo() {
         return new Date(System.currentTimeMillis() - 60_000);
     }
 }

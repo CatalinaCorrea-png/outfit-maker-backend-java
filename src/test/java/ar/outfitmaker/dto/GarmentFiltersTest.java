@@ -7,7 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GarmentFiltersTest {
 
     @Test
-    void noParameters_appliesDefaultPagingFilters() {
+    void nullPagingParams_appliesDefaults() {
         GarmentFilters filters = new GarmentFilters(
                 null, null, null, null, null, null, null, null,
                 null, null, null, null);
@@ -19,7 +19,7 @@ class GarmentFiltersTest {
     }
 
     @Test
-    void withParameters_appliesRequestedPagingFilters() {
+    void givenPagingParams_keepsThem() {
         GarmentFilters filters = new GarmentFilters(
                 null, null, null, null, null, null, null, null,
                 2, 10, "name", false);
