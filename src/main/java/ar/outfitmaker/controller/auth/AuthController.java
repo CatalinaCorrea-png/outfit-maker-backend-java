@@ -1,5 +1,6 @@
 package ar.outfitmaker.controller.auth;
 
+import ar.outfitmaker.config.JwtProperties;
 import ar.outfitmaker.domain.User;
 import ar.outfitmaker.dto.auth.*;
 import ar.outfitmaker.service.UserService;
@@ -11,16 +12,20 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
     private final UserService userService;
     private final AuthService authService;
+    private final JwtProperties jwtProperties;
 
-    public AuthController(UserService userService, AuthService authService) {
+    public AuthController(UserService userService, AuthService authService, JwtProperties jwtProperties) {
         this.userService = userService;
         this.authService = authService;
+        this.jwtProperties = jwtProperties;
     }
 
     @PostMapping
@@ -66,7 +71,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(false) // todo: esto se tiene que cambiar, ahora localhost no es secure
                 .path("/")
-                .maxAge(1800)
+                .maxAge(Duration.ofMillis(jwtProperties.refreshTokenExpiration()))
                 .sameSite("Strict")
                 .build();
     }
