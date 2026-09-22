@@ -66,7 +66,7 @@ public class AuthService {
         if (stored.isEmpty()) {
             return Optional.empty();
         }
-        UserDetails refreshTokenUserDetails = stored.get();;
+        UserDetails refreshTokenUserDetails = stored.get();
 
         String extractedEmail;
         try {
