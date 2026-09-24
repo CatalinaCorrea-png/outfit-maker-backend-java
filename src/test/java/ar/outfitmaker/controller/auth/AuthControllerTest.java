@@ -1,6 +1,8 @@
 package ar.outfitmaker.controller.auth;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
@@ -75,6 +77,22 @@ class AuthControllerTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("USER_EMAIL_ALREADY_EXISTS"));
+    }
+
+    @Test
+    void register_rejectsInvalidData_beforeReachingTheService() throws Exception {
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"","email":"no-es-un-email","password":"123"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.detail").value(containsString("name")))
+                .andExpect(jsonPath("$.detail").value(containsString("email")))
+                .andExpect(jsonPath("$.detail").value(containsString("password")));
+
+        verifyNoInteractions(userService);
     }
 
     @Test

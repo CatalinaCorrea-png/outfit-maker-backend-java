@@ -7,10 +7,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.exc.InvalidFormatException;
+
+import java.util.stream.Collectors;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -70,6 +73,17 @@ public class GlobalExceptionHandler {
 
         return errorResponse(HttpStatus.BAD_REQUEST, "REQUEST_MALFORMED", "Error en el formato del JSON",
                 detail, "El cuerpo de la solicitud no es válido.");
+    }
+
+    // handler para los @Valid de los DTOs de entrada (HTTP 400 Bad Request)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex) {
+        String detail = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+
+        return errorResponse(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Datos inválidos",
+                detail, "Alguno de los campos enviados no es válido.");
     }
 
     // handler para autenticacion de login con token

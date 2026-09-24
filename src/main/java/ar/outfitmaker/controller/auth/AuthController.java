@@ -6,6 +6,7 @@ import ar.outfitmaker.dto.auth.*;
 import ar.outfitmaker.service.UserService;
 import ar.outfitmaker.service.auth.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -59,7 +60,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public AuthResponse createUser(@RequestBody AuthRegisterRequest request) {
+    public AuthResponse createUser(@Valid @RequestBody AuthRegisterRequest request) {
         User user = new User(request.email(), request.name(), "", request.password());
         User savedUser = userService.create(user);
 
