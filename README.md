@@ -10,7 +10,7 @@
 REST API for a virtual wardrobe: users catalog their garments, combine them into outfits, and browse them with filters.
 The domain model is ready for AI-generated outfit suggestions with a user-rating feedback loop.
 
-> Frontend: [outfit-maker-frontend-react-ts](#) (React + TypeScript)
+> Frontend: [outfit-maker-frontend-react-ts](https://github.com/CatalinaCorrea-png/outfit-maker-frontend-react-ts) (React + TypeScript)
 
 ---
 
@@ -177,7 +177,7 @@ src/main/java/ar/outfitmaker/
 
 ## Background
 
-The API was first prototyped in Kotlin and then migrated to Java 21 and Spring Boot 4. The migration was also used to fix issues found along the way, including mismatched repository ID types, an endpoint that serialized JPA entities directly (infinite recursion and an exposed password hash), a registration route blocked by the security config, and refresh-token expiry handling that returned 500 instead of 401.
+The API was first prototyped in Kotlin and then migrated to Java 21 and Spring Boot 4. The migration was also used to fix issues found along the way, including mismatched repository ID types, a registration route blocked by the security config, and refresh-token expiry handling that returned 500 instead of 401.
 
 ## Contact
 
