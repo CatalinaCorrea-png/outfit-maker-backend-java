@@ -3,7 +3,7 @@ package ar.outfitmaker.bootstrap;
 import ar.outfitmaker.domain.Category;
 import ar.outfitmaker.domain.Fit;
 import ar.outfitmaker.domain.Garment;
-import ar.outfitmaker.domain.GarmentImage;
+import ar.outfitmaker.domain.GarmentPhoto;
 import ar.outfitmaker.domain.Pattern;
 import ar.outfitmaker.domain.Season;
 import ar.outfitmaker.domain.Slot;
@@ -93,13 +93,14 @@ public class ProjectBootstrap implements InitializingBean {
         }
     }
 
-    // Las imágenes se persisten solas por el cascade de Garment.images,
-    // así que hay que colgarlas antes del createGarment.
-    // El orden de los parámetros es el sortOrder: la primera es la portada.
-    public void addImages(Garment garment, String... imageUrls) {
-        for (int index = 0; index < imageUrls.length; index++) {
-            garment.addImage(new GarmentImage(garment, imageUrls[index], index));
-        }
+    // Foto de seed: la original en 600x750 (el 4:5 de la card) y la miniatura con la
+    // misma seed de picsum en 300x375. Sin recorte: no hay recortes reales en el seed.
+    // "URLs absolutas: imágenes externas que no están en nuestro storage. PhotoStorage.urlOf las devuelve tal cual."
+    private GarmentPhoto seedPhoto(String seed) {
+        return new GarmentPhoto(
+                "https://picsum.photos/seed/" + seed + "/600/750",
+                "https://picsum.photos/seed/" + seed + "/300/375",
+                null);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -145,6 +146,8 @@ public class ProjectBootstrap implements InitializingBean {
                 .fit(Fit.REGULAR)
                 .season(Season.SUMMER)
                 .careNotes("Lavar con agua fría")
+                .front(seedPhoto("remera-rayada-1"))
+                .back(seedPhoto("remera-rayada-2"))
                 .build();
 
         jeanNegro = Garment.builder(dionne, pantalon)
@@ -156,6 +159,7 @@ public class ProjectBootstrap implements InitializingBean {
                 .formality(3)
                 .fit(Fit.SLIM)
                 .season(Season.ALL_SEASONS)
+                .front(seedPhoto("jean-negro-1"))
                 .build();
 
         camperaDeJean = Garment.builder(cher, campera)
@@ -168,6 +172,8 @@ public class ProjectBootstrap implements InitializingBean {
                 .fit(Fit.OVERSIZED)
                 .season(Season.MID_SEASON)
                 .careNotes("No usar secarropas")
+                .front(seedPhoto("campera-jean-1"))
+                .back(seedPhoto("campera-jean-2"))
                 .build();
 
         zapatillasBlancas = Garment.builder(dionne, zapatillas)
@@ -181,14 +187,6 @@ public class ProjectBootstrap implements InitializingBean {
                 .season(Season.ALL_SEASONS)
                 .build();
 
-        addImages(remeraRayada,
-                "https://picsum.photos/seed/remera-rayada-1/600/750",
-                "https://picsum.photos/seed/remera-rayada-2/600/750");
-        addImages(jeanNegro, "https://picsum.photos/seed/jean-negro-1/600/750");
-        addImages(camperaDeJean,
-                "https://picsum.photos/seed/campera-jean-1/600/750",
-                "https://picsum.photos/seed/campera-jean-2/600/750",
-                "https://picsum.photos/seed/campera-jean-3/600/750");
         // zapatillasBlancas queda sin fotos a propósito: es el caso de la card sin imagen
 
         List.of(remeraRayada, jeanNegro, camperaDeJean, zapatillasBlancas)

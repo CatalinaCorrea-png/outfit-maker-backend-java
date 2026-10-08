@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
 public interface OutfitRepository extends CrudRepository<Outfit, String> {
 
     // TODO: reemplazar por Specifications cuando OutfitFilters tenga criterios reales
-    @EntityGraph(attributePaths = {"user", "items", "items.garment", "items.garment.category", "items.garment.images", "tags"})
+    @EntityGraph(attributePaths = {"user", "items", "items.garment", "items.garment.category", "tags"})
     @Query("SELECT o FROM Outfit o")
     Page<Outfit> findAllBy(Pageable pageable);
 }

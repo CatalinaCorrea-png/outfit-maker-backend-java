@@ -6,6 +6,7 @@ import ar.outfitmaker.domain.Tag;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 
 public record OutfitDTO(
         String id,
@@ -17,7 +18,7 @@ public record OutfitDTO(
         List<GarmentDTO> garments,
         List<String> tags
 ) {
-    public static OutfitDTO from(Outfit outfit) {
+    public static OutfitDTO from(Outfit outfit, Function<String, String> photoUrl) {
         return new OutfitDTO(
                 outfit.getId(),
                 outfit.getName(),
@@ -27,7 +28,7 @@ public record OutfitDTO(
                 outfit.getCreatedAt().toString(),
                 outfit.getItems().stream()
                         .sorted(Comparator.comparingInt(OutfitItem::getLayerOrder))
-                        .map(item -> GarmentDTO.from(item.getGarment()))
+                        .map(item -> GarmentDTO.from(item.getGarment(), photoUrl))
                         .toList(),
                 outfit.getTags().stream()
                         .map(Tag::getName)

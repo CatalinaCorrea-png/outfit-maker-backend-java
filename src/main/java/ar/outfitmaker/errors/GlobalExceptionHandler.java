@@ -10,6 +10,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.exc.InvalidFormatException;
 
@@ -86,6 +88,26 @@ public class GlobalExceptionHandler {
                 detail, "Alguno de los campos enviados no es válido.");
     }
 
+    // archivo más grande que spring.servlet.multipart.max-file-size (HTTP 400 Bad Request).
+    // Sin este handler Spring lo devuelve como 500.
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        return errorResponse(HttpStatus.BAD_REQUEST, "PHOTO_TOO_LARGE", "Archivo demasiado grande",
+                null, "La foto supera el tamaño máximo permitido.");
+    }
+
+    // falta una parte del multipart (HTTP 400 Bad Request). Sin "front" es la foto obligatoria;
+    // cualquier otra (ej: el JSON "garment") es un request mal armado.
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ApiError> handleMissingPart(MissingServletRequestPartException ex) {
+        if ("front".equals(ex.getRequestPartName())) {
+            return errorResponse(HttpStatus.BAD_REQUEST, "PHOTO_REQUIRED", "Falta la foto",
+                    null, "La foto de adelante es obligatoria.");
+        }
+        return errorResponse(HttpStatus.BAD_REQUEST, "REQUEST_MALFORMED", "Error en el formato del request",
+                "Falta la parte '" + ex.getRequestPartName() + "' del formulario.", "El cuerpo de la solicitud no es válido.");
+    }
+
     // handler para autenticacion de login con token
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex) {
@@ -98,6 +120,13 @@ public class GlobalExceptionHandler {
         log.warn("Fallo de autenticación: {}", ex.getMessage());
         return errorResponse(HttpStatus.UNAUTHORIZED, "AUTH_FAILED", "No autorizado",
                 null, "No se pudo autenticar la solicitud.");
+    }
+
+    // ForbiddenException (HTTP 403 Forbidden)
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiError> handleForbiddenException(ForbiddenException ex) {
+        return errorResponse(HttpStatus.FORBIDDEN, ex.getCode(), "Acceso denegado",
+                ex.getMessage(), "No tenés permiso para acceder a este recurso.");
     }
 
     /**

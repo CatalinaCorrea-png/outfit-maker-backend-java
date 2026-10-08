@@ -53,6 +53,8 @@ public class SecurityConfiguration {
                         // Endpoints publicos
                         .requestMatchers("/auth", "/auth/refresh", "/auth/register", "/error").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
+                        // las <img> no mandan el token: las fotos son públicas (nombres UUID)
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         // react pregunta antes de hacer la request real
                         .requestMatchers(HttpMethod.OPTIONS).permitAll()
                         // el resto esta bloqueado si no se autentica

@@ -9,7 +9,7 @@ class GarmentFiltersTest {
     @Test
     void nullPagingParams_appliesDefaults() {
         GarmentFilters filters = new GarmentFilters(
-                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null,
                 null, null, null, null);
 
         assertThat(filters.page()).isZero();
@@ -21,7 +21,7 @@ class GarmentFiltersTest {
     @Test
     void givenPagingParams_keepsThem() {
         GarmentFilters filters = new GarmentFilters(
-                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null,
                 2, 10, "name", false);
 
         assertThat(filters.page()).isEqualTo(2);

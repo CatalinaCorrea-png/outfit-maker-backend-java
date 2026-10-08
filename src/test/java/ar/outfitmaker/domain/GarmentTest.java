@@ -12,23 +12,39 @@ class GarmentTest {
     private final User cher = new User("cher@gmail.com", "Cher", "", "hash");
     private final Category shirt = new Category("Shirt", Slot.UPPER);
 
-    @Test
-    void primaryImage_returnsLowestSortOrder_regardlessOfInsertionOrder() {
-        Garment garment = Garment.builder(cher, shirt).name("Shirt").build();
-        garment.addImage(new GarmentImage(garment, "second.jpg", 1));
-        garment.addImage(new GarmentImage(garment, "first.jpg", 0));
-        garment.addImage(new GarmentImage(garment, "third.jpg", 2));
+    // ─── fotos ──────────────────────────────────────────────────────────────
 
-        assertThat(garment.primaryImage())
-                .map(GarmentImage::getImageUrl)
-                .contains("first.jpg");
+    @Test
+    void photos_areEmptyWithoutPhotos() {
+        Garment garment = Garment.builder(cher, shirt).name("Shirt").build();
+
+        assertThat(garment.getFront()).isEmpty();
+        assertThat(garment.getBack()).isEmpty();
     }
 
     @Test
-    void primaryImage_isEmptyWithoutImages() {
-        Garment garment = Garment.builder(cher, shirt).name("Shirt").build();
+    void photos_keepFrontAndBackApart() {
+        Garment garment = Garment.builder(cher, shirt).name("Shirt")
+                .front(new GarmentPhoto("front.jpg", null, null))
+                .back(new GarmentPhoto("back.jpg", null, null))
+                .build();
 
-        assertThat(garment.primaryImage()).isEmpty();
+        assertThat(garment.getFront()).map(GarmentPhoto::key).contains("front.jpg");
+        assertThat(garment.getBack()).map(GarmentPhoto::key).contains("back.jpg");
+    }
+
+    @Test
+    void gridKey_usesTheThumbnailWhenThereIsOne() {
+        GarmentPhoto photo = new GarmentPhoto("original.jpg", "thumb.jpg", null);
+
+        assertThat(photo.gridKey()).isEqualTo("thumb.jpg");
+    }
+
+    @Test
+    void gridKey_fallsBackToTheOriginalWithoutThumbnail() {
+        GarmentPhoto photo = new GarmentPhoto("original.jpg", null, null);
+
+        assertThat(photo.gridKey()).isEqualTo("original.jpg");
     }
 
     @Test
@@ -43,7 +59,7 @@ class GarmentTest {
     @ParameterizedTest
     @ValueSource(ints = {-1, 0, 6})
     void validate_formalityOutOfBounds_throwsBusinessException(int formality) {
-        Garment garment = Garment.builder(cher, shirt).name("Shirt").formality(formality).build();
+        Garment garment = validGarment().formality(formality).build();
 
         assertThatThrownBy(garment::validate)
                 .isInstanceOfSatisfying(BusinessException.class,
@@ -52,11 +68,24 @@ class GarmentTest {
 
     @Test
     void validate_formalityInBounds_doesNotThrow() {
-        Garment garment = Garment.builder(cher, shirt).name("Shirt").formality(1).build();
+        Garment garment = validGarment().build();
 
         assertThatCode(garment::validate).doesNotThrowAnyException();
     }
 
     // TODO() More validate() tests...
+
+    // ─── helpers ────────────────────────────────────────────────────────────
+
+    /**
+     * Una prenda que pasa todas las reglas de validate(). Cada test rompe una sola cosa
+     * encima: así una regla nueva no hace fallar los tests de las otras.
+     */
+    private Garment.Builder validGarment() {
+        return Garment.builder(cher, shirt)
+                .name("Shirt")
+                .primaryColor("navy")
+                .formality(1);
+    }
 
 }

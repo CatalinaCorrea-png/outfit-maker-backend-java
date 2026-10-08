@@ -4,6 +4,10 @@ jwt:
   access-token-expiration: 900000
   refresh-token-expiration: 604800000
 
+storage:
+  dir: ${java.io.tmpdir}/outfit-maker-test-uploads
+  public-base-url: http://localhost/uploads
+
 spring:
   datasource:
     url: jdbc:h2:mem:outfitmaker;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE

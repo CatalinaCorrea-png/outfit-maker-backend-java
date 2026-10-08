@@ -9,9 +9,9 @@ import org.springframework.data.jpa.domain.Specification;
 public class GarmentSpecification {
     private GarmentSpecification() {}
 
-    public static Specification<Garment> userIdEqual(String userId) {
+    public static Specification<Garment> belongsTo(String userId) {
         return (root, query, cb) ->
-                userId == null ? null : cb.equal(root.get("user").get("id"), userId);
+                cb.equal(root.get("user").get("id"), userId);
     }
 
     public static Specification<Garment> categoryLike(String category) {
@@ -66,13 +66,13 @@ public class GarmentSpecification {
     }
 
     /** Compone todas las specs a partir de los filtros recibidos. */
-    public static Specification<Garment> byCriteria(GarmentFilters criteria) {
+    public static Specification<Garment> byCriteria(GarmentFilters criteria, String userId) {
         // si no se pide explícitamente, solo se listan las prendas activas
         Specification<Garment> activeSpec = criteria.active() == null
                 ? onlyActive()
                 : activeEqual(criteria.active());
 
-        return userIdEqual(criteria.userId())
+        return belongsTo(userId)
                 .and(categoryLike(criteria.category()))
                 .and(nameLike(criteria.name()))
                 .and(brandLike(criteria.brand()))

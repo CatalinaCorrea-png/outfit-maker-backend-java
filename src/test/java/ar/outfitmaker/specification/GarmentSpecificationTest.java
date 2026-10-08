@@ -69,11 +69,11 @@ class GarmentSpecificationTest {
     }
 
     @Test
-    void userIdEqual_isolatesEachUsersWardrobe() {
+    void belongsTo_isolatesEachUsersWardrobe() {
         persistGarment(cher, shirt, "Remera de Cher", Season.SUMMER, true);
         persistGarment(dionne, shirt, "Remera de Dionne", Season.SUMMER, true);
 
-        List<Garment> found = garmentRepository.findAll(GarmentSpecification.userIdEqual(cher.getId()));
+        List<Garment> found = garmentRepository.findAll(GarmentSpecification.belongsTo(cher.getId()));
 
         assertThat(found).extracting(Garment::getName).containsExactly("Remera de Cher");
     }
@@ -109,7 +109,7 @@ class GarmentSpecificationTest {
         persistGarment(cher, shirt, "Remera activa", Season.SUMMER, true);
         persistGarment(cher, shirt, "Remera donada", Season.SUMMER, false);
 
-        List<Garment> found = garmentRepository.findAll(GarmentSpecification.byCriteria(filtersWithActive(null)));
+        List<Garment> found = garmentRepository.findAll(GarmentSpecification.byCriteria(filtersWithActive(null), cher.getId()));
 
         assertThat(found).extracting(Garment::getName).containsExactly("Remera activa");
     }
@@ -119,7 +119,7 @@ class GarmentSpecificationTest {
         persistGarment(cher, shirt, "Remera activa", Season.SUMMER, true);
         persistGarment(cher, shirt, "Remera donada", Season.SUMMER, false);
 
-        List<Garment> found = garmentRepository.findAll(GarmentSpecification.byCriteria(filtersWithActive(false)));
+        List<Garment> found = garmentRepository.findAll(GarmentSpecification.byCriteria(filtersWithActive(false), cher.getId()));
 
         assertThat(found).extracting(Garment::getName).containsExactly("Remera donada");
     }
@@ -133,10 +133,10 @@ class GarmentSpecificationTest {
         persistGarment(cher, pants, "Jean de verano", Season.SUMMER, true);
 
         GarmentFilters filters = new GarmentFilters(
-                cher.getId(), "remera", null, null, null, null, Season.SUMMER, null,
+                "remera", null, null, null, null, Season.SUMMER, null,
                 null, null, null, null);
 
-        List<Garment> found = garmentRepository.findAll(GarmentSpecification.byCriteria(filters));
+        List<Garment> found = garmentRepository.findAll(GarmentSpecification.byCriteria(filters, cher.getId()));
 
         assertThat(found).hasSize(1);
         assertThat(found.getFirst().getUser().getId()).isEqualTo(cher.getId());
@@ -149,11 +149,11 @@ class GarmentSpecificationTest {
         persistGarment(cher, shirt, "B remera", Season.SUMMER, true);
 
         GarmentFilters filters = new GarmentFilters(
-                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null,
                 0, 2, "name", true);
 
         Page<Garment> page = garmentRepository.findAll(
-                GarmentSpecification.byCriteria(filters), filters.toPageable());
+                GarmentSpecification.byCriteria(filters, cher.getId()), filters.toPageable());
 
         assertThat(page.getTotalElements()).isEqualTo(3);
         assertThat(page.getTotalPages()).isEqualTo(2);
@@ -169,10 +169,70 @@ class GarmentSpecificationTest {
         assertThat(garmentRepository.findByUserAndName(dionne, "Otra cosa")).isEmpty();
     }
 
+    // ─── fotos embebidas ────────────────────────────────────────────────────
+
+    @Test
+    void photos_roundTripThroughTheDatabase() {
+        Garment saved = entityManager.persistAndFlush(Garment.builder(cher, shirt)
+                .name("Remera con fotos")
+                .primaryColor("navy")
+                .formality(2)
+                .front(new GarmentPhoto("front.jpg", "front-thumb.jpg", "front-cutout.webp"))
+                .back(new GarmentPhoto("back.jpg", null, null))
+                .build());
+        entityManager.clear(); // obliga a hidratar desde la base, no desde el cache
+
+        Garment found = garmentRepository.findById(saved.getId()).orElseThrow();
+
+        // Hibernate arma el record con el constructor canónico a partir de las columnas front_*
+        assertThat(found.getFront()).contains(
+                new GarmentPhoto("front.jpg", "front-thumb.jpg", "front-cutout.webp"));
+        // Atrás: las columnas que vinieron en null siguen en null dentro del record
+        assertThat(found.getBack()).contains(new GarmentPhoto("back.jpg", null, null));
+    }
+
+    @Test
+    void photos_withAllColumnsNullComeBackAsEmpty() {
+        Garment saved = entityManager.persistAndFlush(Garment.builder(cher, shirt)
+                .name("Remera sin fotos")
+                .primaryColor("navy")
+                .formality(2)
+                .build());
+        entityManager.clear();
+
+        Garment found = garmentRepository.findById(saved.getId()).orElseThrow();
+
+        // Las tres columnas en null: Hibernate deja el embebido en null y el getter da vacío
+        assertThat(found.getFront()).isEmpty();
+        assertThat(found.getBack()).isEmpty();
+    }
+
+    // ─── claves en uso (para el barrido de huérfanas) ────────────────────────
+
+    @Test
+    void findAllPhotoKeyColumns_bringsTheSixKeysOfEachGarment() {
+        entityManager.persistAndFlush(Garment.builder(cher, shirt)
+                .name("Con foto adelante")
+                .primaryColor("navy")
+                .formality(2)
+                .front(new GarmentPhoto("front.webp", "front-thumb.webp", null))
+                .build());
+        persistGarment(cher, shirt, "Sin fotos", Season.SUMMER, true);
+        entityManager.clear();
+
+        List<Object[]> rows = garmentRepository.findAllPhotoKeyColumns();
+
+        // Una fila por prenda, con las 3 claves de adelante y las 3 de atrás; lo que falta, en null
+        assertThat(rows).hasSize(2);
+        assertThat(rows).anySatisfy(row ->
+                assertThat(row).containsExactly("front.webp", "front-thumb.webp", null, null, null, null));
+        assertThat(rows).anySatisfy(row -> assertThat(row).containsOnlyNulls());
+    }
+
     // ─── N + 1 ────────────────────────────────────────────────────────────
 
     @Test
-    void findAll_fetchesUserCategoryAndImagesWithoutNPlusOne() {
+    void findAll_fetchesUserAndCategoryWithoutNPlusOne() {
         persistGarment(cher, shirt, "Remera A", Season.SUMMER, true);
         persistGarment(cher, shirt, "Remera B", Season.SUMMER, true);
         persistGarment(cher, pants, "Jean C", Season.SUMMER, true);
@@ -188,8 +248,9 @@ class GarmentSpecificationTest {
             assertThat(garment.getUser().getEmail()).isNotBlank();
         }); // toca lo lazy
 
-        // 1 sola consulta: el @EntityGraph trae user, category e images con JOINs,
-        // y Spring Data se saltea el count porque la primera página no se llenó.
+        // 1 sola consulta: el @EntityGraph trae user y category con JOINs (ManyToOne: no
+        // multiplican filas, así que el LIMIT sigue en SQL), y las fotos son columnas de
+        // garments. Spring Data se saltea el count porque la primera página no se llenó.
         assertThat(stats.getPrepareStatementCount()).isEqualTo(1); // datos + count
     }
 
@@ -206,7 +267,7 @@ class GarmentSpecificationTest {
     }
 
     private static GarmentFilters filtersWithActive(Boolean active) {
-        return new GarmentFilters(null, null, null, null, null, null, null, active,
+        return new GarmentFilters(null, null, null, null, null, null, active,
                 null, null, null, null);
     }
 }

@@ -12,7 +12,6 @@ import org.springframework.data.domain.Sort;
  */
 public record GarmentFilters(
         // filtering
-        String userId,
         String category,
         String name,
         String brand,

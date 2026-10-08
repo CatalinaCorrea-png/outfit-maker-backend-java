@@ -5,9 +5,6 @@ import ar.outfitmaker.repository.RepositoryElement;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 
 @Entity
@@ -67,8 +64,19 @@ public class Garment implements RepositoryElement {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDate createdAt = LocalDate.now();
 
-    @OneToMany(mappedBy = "garment", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<GarmentImage> images = new ArrayList<>();
+    // Las dos caras de la prenda: sus columnas viven en esta misma fila (sin tabla ni JOIN).
+    // front_url es nullable: la foto obligatoria es una regla del formulario de carga, no de la prenda.
+    @Embedded
+    @AttributeOverride(name = "key", column = @Column(name = "front_key"))
+    @AttributeOverride(name = "thumbKey", column = @Column(name = "front_thumb_key"))
+    @AttributeOverride(name = "cutoutKey", column = @Column(name = "front_cutout_key"))
+    private GarmentPhoto front;
+
+    @Embedded
+    @AttributeOverride(name = "key", column = @Column(name = "back_key"))
+    @AttributeOverride(name = "thumbKey", column = @Column(name = "back_thumb_key"))
+    @AttributeOverride(name = "cutoutKey", column = @Column(name = "back_cutout_key"))
+    private GarmentPhoto back;
 
     /** Requerido por JPA. No usar desde el código. */
     protected Garment() {}
@@ -82,18 +90,6 @@ public class Garment implements RepositoryElement {
         return new Builder(user, category);
     }
 
-    public void addImage(GarmentImage image) {
-        images.add(image);
-    }
-
-    public void deleteImage(GarmentImage image) {
-        images.remove(image);
-    }
-
-    public Optional<GarmentImage> primaryImage() {
-        return images.stream()
-                .min(Comparator.comparingInt(GarmentImage::getSortOrder));
-    }
 
     @Override
     public String getId() {
@@ -105,9 +101,24 @@ public class Garment implements RepositoryElement {
         this.id = id;
     }
 
+    // --- CONSTANTES DE VALIDACION ---
+    // Las columnas de texto sin length son varchar(255)
+    public static final int MAX_TEXT_LENGTH = 255;
+    // Hex ("#1a237e", "#fff") o nombre normalizado ("navy", "off white", "rosa-viejo").
+    public static final String COLOR_REGEX =
+            "(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|[a-zA-ZáéíóúñÁÉÍÓÚÑ]+([\\s-][a-zA-ZáéíóúñÁÉÍÓÚÑ]+)*)";
+
     @Override
     public void validate() {
+        if (this.name.isBlank()) throw new BusinessException("GARMENT_NAME_REQUIRED", "La prenda tiene que tener un nombre");
+        if (!this.primaryColor.matches(COLOR_REGEX)) throw new BusinessException("INVALID_PRIMARY_COLOR", "El color principal tiene que ser un hex o un nombre de color");
+        if (!this.secondaryColor.isEmpty() && !this.secondaryColor.matches(COLOR_REGEX)) throw new BusinessException("INVALID_SECONDARY_COLOR", "El color secundario tiene que ser un hex o un nombre de color");
         if (this.formality < 1 || this.formality > 5) throw new BusinessException("INVALID_FORMALITY_NUMBER", "La formalidad debe estar entre 1 y 5");
+        if (isTooLong(this.name) || isTooLong(this.brand) || isTooLong(this.material) || isTooLong(this.careNotes)) throw new BusinessException("GARMENT_TEXT_TOO_LONG", "Los textos de la prenda no pueden superar los " + MAX_TEXT_LENGTH + " caracteres");
+    }
+
+    private static boolean isTooLong(String value) {
+        return value != null && value.length() > MAX_TEXT_LENGTH;
     }
 
     public User getUser() {
@@ -166,8 +177,13 @@ public class Garment implements RepositoryElement {
         return createdAt;
     }
 
-    public List<GarmentImage> getImages() {
-        return images;
+    // Optional: si las tres columnas de una cara están en null, Hibernate deja el embebido en null
+    public Optional<GarmentPhoto> getFront() {
+        return Optional.ofNullable(front);
+    }
+
+    public Optional<GarmentPhoto> getBack() {
+        return Optional.ofNullable(back);
     }
 
     public void setUser(User user) {
@@ -224,23 +240,31 @@ public class Garment implements RepositoryElement {
             this.garment = new Garment(user, category);
         }
 
+        /**
+         * Los defaults de la entidad son "", pero el builder pisa con lo que venga, incluso null
+         * esto transforma cualquier posible null en "" para que no llegue a la base (secondary_color es NOT NULL)
+         */
+        private static String clean(String value) {
+            return value == null ? "" : value.trim();
+        }
+
         public Builder name(String name) {
-            garment.name = name;
+            garment.name = clean(name);
             return this;
         }
 
         public Builder brand(String brand) {
-            garment.brand = brand;
+            garment.brand = clean(brand);
             return this;
         }
 
         public Builder primaryColor(String primaryColor) {
-            garment.primaryColor = primaryColor;
+            garment.primaryColor = clean(primaryColor);
             return this;
         }
 
         public Builder secondaryColor(String secondaryColor) {
-            garment.secondaryColor = secondaryColor;
+            garment.secondaryColor = clean(secondaryColor);
             return this;
         }
 
@@ -250,7 +274,7 @@ public class Garment implements RepositoryElement {
         }
 
         public Builder material(String material) {
-            garment.material = material;
+            garment.material = clean(material);
             return this;
         }
 
@@ -276,6 +300,16 @@ public class Garment implements RepositoryElement {
 
         public Builder active(boolean active) {
             garment.active = active;
+            return this;
+        }
+
+        public Builder front(GarmentPhoto front) {
+            garment.front = front;
+            return this;
+        }
+
+        public Builder back(GarmentPhoto back) {
+            garment.back = back;
             return this;
         }
 

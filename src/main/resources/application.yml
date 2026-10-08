@@ -8,7 +8,23 @@ jwt:
   access-token-expiration: ${JWT_ACCESS_EXPIRATION:900000}      # 15 minutos
   refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 dias
 
+storage:
+  # Carpeta de las fotos subidas: outfit-maker/uploads, al lado de los dos proyectos y
+  # fuera de los repos (nunca se commitea). Es relativa al directorio de trabajo del back,
+  # que con bootRun o IntelliJ es outfit-maker-backend-java. En la nube no sirve el disco:
+  # ver PhotoStorage.
+  dir: ${STORAGE_DIR:../uploads}
+  # Con qué URL las ve el front (la carpeta se sirve en /uploads/**)
+  public-base-url: ${STORAGE_PUBLIC_URL:http://localhost:8080/uploads}
+
 spring:
+  # El front achica las fotos antes de subirlas (máx. 1600px), así que esto es solo un tope.
+  # El default de Spring es 1MB por archivo.
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 12MB
+
   #   base de datos posta
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5433/outfitmaker_sql}

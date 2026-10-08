@@ -2,6 +2,8 @@ package ar.outfitmaker.dto;
 
 import ar.outfitmaker.domain.*;
 
+import java.util.function.Function;
+
 public record GarmentDTO(
         String id,
         String category,   // category name
@@ -17,9 +19,12 @@ public record GarmentDTO(
         String careNotes,
         boolean active,
         String createdAt,
-        String imageUrl
+        // Las dos caras para la card: adelante fija, atrás en hover.
+        // Miniatura si hay, si no la original; null si la prenda no tiene esa foto.
+        String frontImageUrl,
+        String backImageUrl
 ) {
-    public static GarmentDTO from(Garment garment) {
+    public static GarmentDTO from(Garment garment, Function<String, String> photoUrl) {
         return new GarmentDTO(
                 garment.getId(),
                 garment.getCategory().getName(),
@@ -35,8 +40,13 @@ public record GarmentDTO(
                 garment.getCareNotes(),
                 garment.isActive(),
                 garment.getCreatedAt().toString(),
-                garment.primaryImage()
-                        .map(GarmentImage::getImageUrl)
+                garment.getFront()
+                        .map(GarmentPhoto::gridKey)
+                        .map(photoUrl)
+                        .orElse(null),
+                garment.getBack()
+                        .map(GarmentPhoto::gridKey)
+                        .map(photoUrl)
                         .orElse(null)
         );
     }
